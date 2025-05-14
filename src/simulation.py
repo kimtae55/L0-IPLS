@@ -8,10 +8,17 @@ class Simulation:
         self.rho_star = rho_star
         self.rng = np.random.default_rng(seed)
 
-    def _find_orthogonal_eta2(self, eta1, eta2_init, Sigma):
-        projection = (eta1 @ Sigma @ eta2_init) / (eta1 @ Sigma @ eta1) * eta1
-        eta2_orthogonal = eta2_init - projection
-        return eta2_orthogonal
+    def _find_orthonormal_alpha(self, alpha1, alpha2_init, Sigma):
+        """
+        Need to confirm with prof:
+        https://ubcmath.github.io/MATH307/orthogonality/projection.html
+        https://dept.math.lsa.umich.edu/~speyer/417/OrthoProj.pdf
+        Refer to David C. Lay's Linear Algebra and its Applications p.349, extended to Mahalanobis distance 
+        """
+        projection = (alpha1 @ Sigma @ alpha2_init) / (alpha1 @ Sigma @ alpha1) * alpha1
+        alpha2_orthogonal = alpha2_init - projection
+        alpha2_orthonormal = self._normalize(alpha2_orthogonal, Sigma)
+        return alpha2_orthonormal
     
     def _normalize(self, v, Sigma):
         return v / np.sqrt(v.T @ Sigma @ v)
@@ -42,9 +49,9 @@ class Simulation:
         beta1 = self._normalize(eta1, Sigma_XX)
 
         if eta2 is not None: # two canonical weight vectors, K = 2 
-            eta2 = self._find_orthogonal_eta2(eta1, eta2, Sigma_YY)
             alpha2 = self._normalize(eta2, Sigma_YY)
-            beta2 = self._normalize(eta2, Sigma_XX)
+            alpha2 = beta2 = self._find_orthonormal_alpha(alpha1, alpha2, Sigma_YY)
+
             Sigma = self._build_joint_covariance(Sigma_YY, Sigma_XX,
                                                 [alpha1, alpha2], [beta1, beta2],
                                                 self.rho_star)
@@ -66,12 +73,11 @@ class Simulation:
         """
         Identity covariances
         """
-        idx1 = [0, 5, 10, 15, 20]
-        idx2 = [0, 5, 10, 15, 20]
-        eta1 = np.zeros(self.p); eta1[idx1] = [-2, -1, -1, 2, 2]
-        eta2 = np.zeros(self.p); eta2[idx2] = [0, 0, 0, 1, -1]
-        Sigma = Sigma_YY = Sigma_XX = np.eye(self.p)
-        eta2 = self._find_orthogonal_eta2(eta1, eta2, Sigma)
+        idx1 = [0, 1, 2, 3]
+        idx2 = [5, 6, 7, 8]
+        eta1 = np.zeros(self.p); eta1[idx1] = [1, 1, 1, 1]
+        eta2 = np.zeros(self.p); eta2[idx2] = [1, 1, 1, 1]
+        Sigma_YY = Sigma_XX = np.eye(self.p)
         return self._generate_groundtruth(eta1, eta2, Sigma_YY, Sigma_XX)
     
     def model2(self): 
@@ -79,13 +85,11 @@ class Simulation:
         Moderate correlation, AR(0.3)
         """
         rho = 0.3
-        idx1 = [0, 5, 10, 15, 20]
-        idx2 = [0, 5, 10, 15, 20]
-        eta1 = np.zeros(self.p); eta1[idx1] = [-2, -1, -1, 2, 2]
-        eta2 = np.zeros(self.p); eta2[idx2] = [0, 0, 0, 1, -1]
-        Sigma = rho ** np.abs(np.subtract.outer(np.arange(self.p), np.arange(self.p)))
-        Sigma_YY = Sigma_XX = Sigma
-        eta2 = self._find_orthogonal_eta2(eta1, eta2, Sigma)
+        idx1 = [0, 1, 2, 3]
+        idx2 = [5, 6, 7, 8]
+        eta1 = np.zeros(self.p); eta1[idx1] = [1, 1, 1, 1]
+        eta2 = np.zeros(self.p); eta2[idx2] = [1, 1, 1, 1]
+        Sigma_YY = Sigma_XX = rho ** np.abs(np.subtract.outer(np.arange(self.p), np.arange(self.p)))
         return self._generate_groundtruth(eta1, eta2, Sigma_YY, Sigma_XX)
     
     def model3(self):
@@ -93,31 +97,28 @@ class Simulation:
         High correlation, AR(0.8)
         """ 
         rho = 0.8
-        idx1 = [0, 5, 10, 15, 20]
-        idx2 = [0, 5, 10, 15, 20]
-        eta1 = np.zeros(self.p); eta1[idx1] = [-2, -1, -1, 2, 2]
-        eta2 = np.zeros(self.p); eta2[idx2] = [0, 0, 0, 1, -1]
-        Sigma = rho ** np.abs(np.subtract.outer(np.arange(self.p), np.arange(self.p)))
-        Sigma_YY = Sigma_XX = Sigma
-        eta2 = self._find_orthogonal_eta2(eta1, eta2, Sigma)
+        idx1 = [0, 1, 2, 3]
+        idx2 = [5, 6, 7, 8]
+        eta1 = np.zeros(self.p); eta1[idx1] = [1, 1, 1, 1]
+        eta2 = np.zeros(self.p); eta2[idx2] = [1, 1, 1, 1]
+        Sigma_YY = Sigma_XX = rho ** np.abs(np.subtract.outer(np.arange(self.p), np.arange(self.p)))
         return self._generate_groundtruth(eta1, eta2, Sigma_YY, Sigma_XX)
     
     def model4(self):
         """
         Sparse precision matrices
         """
-        idx1 = [0, 5, 10, 15, 20]
-        idx2 = [0, 5, 10, 15, 20]
-        eta1 = np.zeros(self.p); eta1[idx1] = [-2, -1, -1, 2, 2]
-        eta2 = np.zeros(self.p); eta2[idx2] = [0, 0, 0, 1, -1]
+        idx1 = [0, 1, 2, 3]
+        idx2 = [5, 6, 7, 8]
+        eta1 = np.zeros(self.p); eta1[idx1] = [1, 1, 1, 1]
+        eta2 = np.zeros(self.p); eta2[idx2] = [1, 1, 1, 1]
         Omega = np.eye(self.p)
         for i in range(self.p):
             if i + 1 < self.p: Omega[i, i+1] = Omega[i+1, i] = 0.5
             if i + 2 < self.p: Omega[i, i+2] = Omega[i+2, i] = 0.4
         Sigma0 = np.linalg.inv(Omega)
         Lambda = np.diag(1.0 / np.sqrt(np.diag(Sigma0)))
-        Sigma = Sigma_YY = Sigma_XX = Lambda @ Sigma0 @ Lambda
-        eta2 = self._find_orthogonal_eta2(eta1, eta2, Sigma)
+        Sigma_YY = Sigma_XX = Lambda @ Sigma0 @ Lambda
         return self._generate_groundtruth(eta1, eta2, Sigma_YY, Sigma_XX)
     
     def model5(self):
@@ -136,8 +137,7 @@ class Simulation:
         rho = 0.5
         idx = [0, 1, 2, 3, 4, 5, 6, 7]
         eta = np.zeros(self.p); eta[idx] = [1] * 8
-        Sigma = rho ** np.abs(np.subtract.outer(np.arange(self.p), np.arange(self.p)))
-        Sigma_YY = Sigma_XX = Sigma
+        Sigma_YY = Sigma_XX = rho ** np.abs(np.subtract.outer(np.arange(self.p), np.arange(self.p)))
         return self._generate_groundtruth(eta, None, Sigma_YY, Sigma_XX)
 
     def model7(self): 
@@ -146,12 +146,10 @@ class Simulation:
         """
         rho = 0.5
         idx1 = [0, 1, 2, 3]
-        idx2 = [50, 51, 52, 53]
+        idx2 = [5, 6, 7, 8]
         eta1 = np.zeros(self.p); eta1[idx1] = [1, 1, 1, 1]
         eta2 = np.zeros(self.p); eta2[idx2] = [1, 1, 1, 1]
-        Sigma = rho ** np.abs(np.subtract.outer(np.arange(self.p), np.arange(self.p)))
-        Sigma_YY = Sigma_XX = Sigma
-        eta2 = self._find_orthogonal_eta2(eta1, eta2, Sigma)
+        Sigma_YY = Sigma_XX = rho ** np.abs(np.subtract.outer(np.arange(self.p), np.arange(self.p)))
         return self._generate_groundtruth(eta1, eta2, Sigma_YY, Sigma_XX)
     
     def model8(self):
@@ -160,10 +158,8 @@ class Simulation:
         """
         rho = 0.5
         idx1 = [0, 1, 2, 3]
-        idx2 = [50, 51, 52, 53]
+        idx2 = [5, 6, 7, 8]
         eta1 = np.zeros(self.p); eta1[idx1] = [1, 1, 1, 1]
         eta2 = np.zeros(self.p); eta2[idx2] = [1, 1, 1, 1]
-        Sigma = rho * np.ones((self.p, self.p)) + (1 - rho) * np.eye(self.p)
-        Sigma_YY = Sigma_XX = Sigma
-        eta2 = self._find_orthogonal_eta2(eta1, eta2, Sigma)
+        Sigma_YY = Sigma_XX = rho * np.ones((self.p, self.p)) + (1 - rho) * np.eye(self.p)
         return self._generate_groundtruth(eta1, eta2, Sigma_YY, Sigma_XX)
