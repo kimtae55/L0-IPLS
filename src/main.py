@@ -1,8 +1,11 @@
 from simulation import Simulation
-from util import evaluate_subspace_error
-from model import l0_scca
+import util
+import model
 import benchmarks
 import numpy as np
+import pandas as pd
+import os
+from datetime import datetime
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -21,128 +24,61 @@ def is_orthogonal(cmat, scov):
     """
     print(cmat.T @ scov @ cmat) 
 
+# do 200 replications 
 def main():
-    # Simulate data
-    sim = Simulation(n=200, p=100, seed=42)
+    n_p_combinations = [(500, 300), (500, 1000), (500, 1200), (500, 2000)]
 
-    print('Model 1:')
-    Y, X, A_star, B_star, rho_star = sim.model1()
-    print(A_star[:10])
-    print(B_star[:10])
-    is_correct_shape(Y, X, A_star, B_star, rho_star)
-    is_orthogonal(A_star, sim.Sigma_YY)
-    is_orthogonal(B_star, sim.Sigma_XX)
-    print('\n')
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    output_file = f'sim_results_{timestamp}.csv'
 
-    print('Model 2:')
-    Y, X, A_star, B_star, rho_star = sim.model2()
-    print(A_star[:10])
-    print(B_star[:10])
-    is_correct_shape(Y, X, A_star, B_star, rho_star)
-    is_orthogonal(A_star, sim.Sigma_YY)
-    is_orthogonal(B_star, sim.Sigma_XX)
-    print('\n')
+    if not os.path.exists(output_file):
+        pd.DataFrame(columns=['n', 'p', 'model', 'method',
+                                'subspace_error_A', 'subspace_error_B',
+                                'mcc_A', 'mcc_B',
+                                'cosine_similarity_A', 'cosine_similarity_B',
+                                'rho_star'
+                                ]).to_csv(output_file, index=False)
 
-    print('Model 3:')
-    Y, X, A_star, B_star, rho_star = sim.model3()
-    print(A_star[:10])
-    print(B_star[:10])
-    is_correct_shape(Y, X, A_star, B_star, rho_star)
-    is_orthogonal(A_star, sim.Sigma_YY)
-    is_orthogonal(B_star, sim.Sigma_XX)
-    print('\n')
+    for n, p in n_p_combinations:
+        sim = Simulation(n=n, p=p, seed=42)
+        for i in range(1, 9):
+            print(f"\n=== Running Simulation Model {i} with n={n}, p={p} ===")
+            model_func = getattr(sim, f'model{i}')
+            Y, X, A_star, B_star, rho_star = model_func()
 
-    print('Model 4:')
-    Y, X, A_star, B_star, rho_star = sim.model4()
-    print(A_star[:10])
-    print(B_star[:10])
-    is_correct_shape(Y, X, A_star, B_star, rho_star)
-    is_orthogonal(A_star, sim.Sigma_YY)
-    is_orthogonal(B_star, sim.Sigma_XX)
-    print('\n')
+            is_correct_shape(Y, X, A_star, B_star, rho_star)
+            is_orthogonal(A_star, sim.Sigma_YY)
+            is_orthogonal(B_star, sim.Sigma_XX)
 
-    print('Model 5:')
-    Y, X, A_star, B_star, rho_star = sim.model5()
-    print(A_star[:10])
-    print(B_star[:10])
-    is_correct_shape(Y, X, A_star, B_star, rho_star)
-    is_orthogonal(A_star, sim.Sigma_YY)
-    is_orthogonal(B_star, sim.Sigma_XX)
-    print('\n')
+            for method_name, method_func in {
+                'CCA': benchmarks.run_cca,
+                'PMD': benchmarks.run_pmd,
+                'L0_cai': benchmarks.run_l0_cai,
+                'L0_lind': benchmarks.run_l0_lind,
+                'iPLS': benchmarks.run_ipls,
+                'iPLS_L0': model.run_l0_ipls,
+            }.items():
+                A_hat, B_hat = method_func(X, Y, A_star.shape[1])
+                err_A, err_B = util.evaluate_subspace_error(A_star, B_star, A_hat, B_hat)
+                mcc_A, mcc_B = util.evaluate_mcc(A_star, B_star, A_hat, B_hat)
+                cos_A, cos_B = util.evaluate_cossim(A_star, B_star, A_hat, B_hat)
 
-    print('Model 6:')
-    Y, X, A_star, B_star, rho_star = sim.model6()
-    print(A_star[:10])
-    print(B_star[:10])
-    is_correct_shape(Y, X, A_star, B_star, rho_star)
-    is_orthogonal(A_star, sim.Sigma_YY)
-    is_orthogonal(B_star, sim.Sigma_XX)
-    print('\n')
+                # Save all metrics to CSV
+                row = pd.DataFrame([{
+                    'n': n,
+                    'p': p,
+                    'model': f'Model {i}',
+                    'method': method_name,
+                    'subspace_error_A': err_A,
+                    'subspace_error_B': err_B,
+                    'mcc_A': mcc_A,
+                    'mcc_B': mcc_B,
+                    'cosine_similarity_A': cos_A,
+                    'cosine_similarity_B': cos_B,
+                    'rho_star': str(list(rho_star))  # safe for CSV
+                }])
 
-    print('Model 7:')
-    Y, X, A_star, B_star, rho_star = sim.model7()
-    print(A_star[:10])
-    print(B_star[:10])
-    is_correct_shape(Y, X, A_star, B_star, rho_star)
-    is_orthogonal(A_star, sim.Sigma_YY)
-    is_orthogonal(B_star, sim.Sigma_XX)
-    print('\n')
-
-    print('Model 8:')
-    Y, X, A_star, B_star, rho_star = sim.model8()
-    print(A_star[:10])
-    print(B_star[:10])
-    is_correct_shape(Y, X, A_star, B_star, rho_star)
-    is_orthogonal(A_star, sim.Sigma_YY)
-    is_orthogonal(B_star, sim.Sigma_XX)
-    print('\n')
-    '''
-    # L0 penalties (can be tuned)
-    lambda_alpha = [0.1] * A_star.shape[1]
-    lambda_beta  = [0.1] * B_star.shape[1]
-
-    
-    # Run sparse CCA using SDAR
-    A_hat, B_hat = l0_scca(X, Y, K=A_star.shape[1],
-                           lambda_alpha_list=lambda_alpha,
-                           lambda_beta_list=lambda_beta,
-                           mode="sdar")  
-
-    # Evaluate estimated subspaces
-    err_A, err_B = evaluate_subspace_error(A_star, B_star, A_hat, B_hat)
-
-    # Print results
-    print("True canonical correlations:", rho_star)
-    print("Subspace error for A:", err_A)
-    print("Subspace error for B:", err_B)
-    '''
-
-    # CCA
-    print('CCA:') 
-    A_hat, B_hat = benchmarks.run_cca(X, Y, A_star.shape[1])
-    err_A, err_B = evaluate_subspace_error(A_star, B_star, A_hat, B_hat)
-    print("True canonical correlations:", rho_star)
-    print("Subspace error for A:", err_A)
-    print("Subspace error for B:", err_B)
-    print("\n")
-
-    # PMD 
-    print('PMD:') 
-    A_hat, B_hat = benchmarks.run_pmd(X, Y, A_star.shape[1])
-    err_A, err_B = evaluate_subspace_error(A_star, B_star, A_hat, B_hat)
-    print("True canonical correlations:", rho_star)
-    print("Subspace error for A:", err_A)
-    print("Subspace error for B:", err_B)
-    print("\n")
-
-    # iPLS 
-    print('iPLS:') 
-    A_hat, B_hat = benchmarks.run_ipls(X, Y, A_star.shape[1])
-    err_A, err_B = evaluate_subspace_error(A_star, B_star, A_hat, B_hat)
-    print("True canonical correlations:", rho_star)
-    print("Subspace error for A:", err_A)
-    print("Subspace error for B:", err_B)
-    print("\n")
+                row.to_csv(output_file, mode='a', header=False, index=False)
 
 if __name__ == "__main__":
     main()
