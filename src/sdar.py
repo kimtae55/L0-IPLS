@@ -110,7 +110,7 @@ def asdar(X, y, max_iter_per_sdar, L=None, alpha=1e-5, mode='parallel', n_jobs=6
     if L is None:
         L = int(np.floor(n / np.log(n)))
 
-    tasks = range(1, L + 1)
+    tasks = range(1, L + 1) # could change this to be more sparse to speed up, using 'mode=fast'
 
     if mode == 'parallel':
         results = Parallel(n_jobs=n_jobs)(

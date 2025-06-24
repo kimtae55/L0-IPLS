@@ -35,7 +35,7 @@ def run_l0_ipls(X, Y, K, max_iter=100, max_ipls_iter = 100, tol=1e-6):
     A_hat, B_hat, R_diag = [], [], []
     Omega = np.eye(n)
 
-    for k in tqdm(range(K), desc="Canonical pairs"):
+    for k in range(K):
         if k > 0:
             A_stack = np.column_stack(A_hat)
             B_stack = np.column_stack(B_hat)

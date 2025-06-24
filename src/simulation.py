@@ -29,6 +29,8 @@ class Simulation:
     def _build_joint_covariance(self, Sigma_YY, Sigma_XX, alphas, betas, rhos):
         Sigma_YX = self._build_cross_covariance(alphas, betas, rhos, Sigma_YY, Sigma_XX)
         Sigma_XY = Sigma_YX.T
+        self.Sigma_XY = Sigma_XY
+        self.Sigma_YX = Sigma_YX
         return np.block([[Sigma_YY, Sigma_YX], [Sigma_XY, Sigma_XX]])
 
     def _generate_data(self, Sigma):
