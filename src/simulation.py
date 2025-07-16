@@ -52,7 +52,9 @@ class Simulation:
 
         if eta2 is not None: # two canonical weight vectors, K = 2 
             alpha2 = self._normalize(eta2, Sigma_YY)
-            alpha2 = beta2 = self._find_orthonormal_alpha(alpha1, alpha2, Sigma_YY)
+            alpha2 = self._find_orthonormal_alpha(alpha1, alpha2, Sigma_YY)
+            beta2 = self._normalize(eta2, Sigma_XX)
+            beta2 = self._find_orthonormal_alpha(beta1, beta2, Sigma_XX)
 
             Sigma = self._build_joint_covariance(Sigma_YY, Sigma_XX,
                                                 [alpha1, alpha2], [beta1, beta2],
