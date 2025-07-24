@@ -3,7 +3,7 @@ from sdar import sdar, asdar
 import numpy as np
 from tqdm import tqdm
 
-def run_l0_ipls(X, Y, K, max_iter=100, max_ipls_iter = 100, tol=1e-6):
+def run_l0_ipls(X, Y, K, max_iter=100, max_ipls_iter = 100, L=80, tol=1e-6, mode='sdar'):
     """
     L0 Sparse Canonical Correlation Analysis (SCCA)
 
@@ -56,11 +56,13 @@ def run_l0_ipls(X, Y, K, max_iter=100, max_ipls_iter = 100, tol=1e-6):
             alpha_prev, beta_prev = alpha.copy(), beta.copy()
 
             Y_tilde = Omega.T @ Y @ alpha
-            beta = asdar(X, Y_tilde, max_iter_per_sdar=max_iter)
+            if mode == 'sdar': beta = sdar(X, Y_tilde, T=10, alpha=1e-5, max_iter=max_iter)
+            else: beta = asdar(X, Y_tilde, max_iter_per_sdar=max_iter, L=L)
             beta /= np.sqrt(beta.T @ (X.T @ X / n) @ beta)
 
             X_tilde = Omega @ X @ beta
-            alpha = asdar(Y, X_tilde, max_iter_per_sdar=max_iter)
+            if mode == 'sdar': alpha = sdar(Y, X_tilde, T=10, alpha=1e-5, max_iter=max_iter)
+            else: alpha = asdar(Y, X_tilde, max_iter_per_sdar=max_iter, L=L)
             alpha /= np.sqrt(alpha.T @ (Y.T @ Y / n) @ alpha)
 
             if np.linalg.norm(alpha - alpha_prev) < tol and np.linalg.norm(beta - beta_prev) < tol:

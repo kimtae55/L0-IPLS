@@ -79,7 +79,10 @@ def sdar(X, y, T=5, alpha=0.0, max_iter=100):
 
 def compute_hbic(T, X, y, n, p, alpha, max_iter):
     beta_T = sdar(X, y, T=T, alpha=alpha, max_iter=max_iter)
-    hbic_T = 0.5 * np.linalg.norm(y - X @ beta_T) ** 2 + np.log(n) * np.log(p) * T
+    residual = y - X @ beta_T
+    rss = np.maximum(np.linalg.norm(residual)**2 / n, 1e-8)
+    penalty = T * np.log(p - 1) * np.log(np.log(n))
+    hbic_T = n * np.log(rss) + penalty
     return hbic_T, beta_T
 
 def asdar(X, y, max_iter_per_sdar, L=None, alpha=1e-5, mode='parallel', n_jobs=6):
