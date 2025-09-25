@@ -1,2 +1,3 @@
-# L0_SCCA_ASDAR
-L0 based SCCA using ASDAR solution
+# L0-IPLS
+L0-IPLS: An L0 Penalized Sparse Canonical Correlation Analysis Method with
+Application to High-Dimensional Imaging-Omics Data
